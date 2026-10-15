@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPCX Sentiment Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .topic-card { cursor: pointer; transition: all 0.15s ease; }
+    .topic-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .detail-panel { display: none; }
+    .detail-panel.open { display: block; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+
+    <header class="mb-6">
+      <h1 class="text-xl sm:text-2xl font-bold tracking-tight">SPCX Sentiment Tracker</h1>
+      <p class="text-sm text-slate-500 mt-1">X-based view • Last ~24 hours + 7-day topic trends</p>
+      <p class="text-xs text-slate-400 mt-1">Snapshot ~October 15, 2026 • Click a topic for the 7-day chart</p>
+    </header>
+
+    <!-- Leadership Summary -->
+    <section class="bg-indigo-50 border border-indigo-100 rounded-xl p-5 mb-6">
+      <h2 class="font-semibold text-sm text-indigo-900 mb-2">Leadership Summary</h2>
+      <p class="text-sm text-indigo-900/90 leading-relaxed">
+        On X, near-term catalysts are louder than long-term platform conviction. Merger speculation and connectivity/spectrum are the highest-activity topics right now. Lock-up/supply remains a steady background concern. Space and AI themes are present but secondary. Primary communication that gives context on unlocks and spectrum progress has elevated leverage.
+      </p>
+    </section>
+
+    <!-- Current Narratives -->
+    <section class="bg-white rounded-xl border border-slate-200 p-5 mb-6 shadow-sm">
+      <h2 class="font-semibold text-base mb-1">Active Narratives <span class="text-slate-400 font-normal text-sm">(last ~24 hours)</span></h2>
+      <p class="text-xs text-slate-400 mb-3">Relative activity from targeted X searches. Updated on refresh.</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead>
+            <tr class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+              <th class="pb-2 pr-3">#</th>
+              <th class="pb-2 pr-3">Narrative</th>
+              <th class="pb-2 pr-3">Tone</th>
+              <th class="pb-2">IR Implication</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-700">
+            <tr class="border-b border-slate-100">
+              <td class="py-2.5 pr-3"><span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-0.5 rounded">#1</span></td>
+              <td class="py-2.5 pr-3">TSLA–SPCX merger speculation</td>
+              <td class="py-2.5 pr-3"><span class="bg-slate-100 text-slate-700 text-xs font-medium px-2 py-0.5 rounded">Speculative / mixed</span></td>
+              <td class="py-2.5">Monitor. Clarify only if intensity rises or if directly asked. Avoid fueling unconfirmed speculation.</td>
+            </tr>
+            <tr class="border-b border-slate-100">
+              <td class="py-2.5 pr-3"><span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-0.5 rounded">#2</span></td>
+              <td class="py-2.5 pr-3">Connectivity / spectrum / mobile</td>
+              <td class="py-2.5 pr-3"><span class="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5 rounded">Mixed</span></td>
+              <td class="py-2.5">Opportunity to reinforce strategic rationale and progress milestones when appropriate.</td>
+            </tr>
+            <tr class="border-b border-slate-100">
+              <td class="py-2.5 pr-3"><span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-0.5 rounded">#3</span></td>
+              <td class="py-2.5 pr-3">Lock-up / share supply</td>
+              <td class="py-2.5 pr-3"><span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">Cautious / bearish</span></td>
+              <td class="py-2.5">Classic communication opportunity. Context on timing, structure, and holder base can reduce “exit liquidity” framing.</td>
+            </tr>
+            <tr class="border-b border-slate-100">
+              <td class="py-2.5 pr-3"><span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-0.5 rounded">#4</span></td>
+              <td class="py-2.5 pr-3">Space / Starship / launch</td>
+              <td class="py-2.5 pr-3"><span class="bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-0.5 rounded">Mostly bullish</span></td>
+              <td class="py-2.5">Supportive. Amplify measurable progress when available.</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 pr-3"><span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-0.5 rounded">#5</span></td>
+              <td class="py-2.5 pr-3">AI / compute / data centers</td>
+              <td class="py-2.5 pr-3"><span class="bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-0.5 rounded">Mostly constructive</span></td>
+              <td class="py-2.5">Supportive when relevant. Tie to execution updates rather than hype.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Topic trend cards -->
+    <section class="mb-4">
+      <h2 class="font-semibold text-base mb-3">7-day topic activity</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+        <div class="topic-card bg-white rounded-xl border-2 border-indigo-400 p-4 text-center shadow-sm" onclick="toggleTopic('merger')">
+          <div class="text-xs text-slate-500 uppercase">Merger</div>
+          <div class="text-xl font-bold text-indigo-600 mt-1">High</div>
+          <div class="text-xs text-slate-400 mt-1">Main theme: Barclays note</div>
+        </div>
+        <div class="topic-card bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm" onclick="toggleTopic('connectivity')">
+          <div class="text-xs text-slate-500 uppercase">Connectivity</div>
+          <div class="text-xl font-bold text-amber-600 mt-1">High</div>
+          <div class="text-xs text-slate-400 mt-1">Main theme: spectrum / mobile</div>
+        </div>
+        <div class="topic-card bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm" onclick="toggleTopic('lockup')">
+          <div class="text-xs text-slate-500 uppercase">Lock-up</div>
+          <div class="text-xl font-bold text-red-600 mt-1">Mod–High</div>
+          <div class="text-xs text-slate-400 mt-1">Main theme: unlock timing</div>
+        </div>
+        <div class="topic-card bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm" onclick="toggleTopic('space')">
+          <div class="text-xs text-slate-500 uppercase">Space / launch</div>
+          <div class="text-xl font-bold text-emerald-600 mt-1">Moderate</div>
+          <div class="text-xs text-slate-400 mt-1">Main theme: Starship</div>
+        </div>
+        <div class="topic-card bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm" onclick="toggleTopic('ai')">
+          <div class="text-xs text-slate-500 uppercase">AI / compute</div>
+          <div class="text-xl font-bold text-blue-600 mt-1">Moderate</div>
+          <div class="text-xs text-slate-400 mt-1">Main theme: data centers</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Example topic panel (Merger open by default) -->
+    <div id="topic-merger" class="detail-panel open mb-6">
+      <div class="bg-white rounded-xl border-2 border-indigo-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">Merger speculation — 7-day activity</h3>
+          <button onclick="toggleTopic('merger')" class="text-xs text-slate-500">Close ✕</button>
+        </div>
+        <p class="text-sm text-slate-600 mb-3"><span class="font-medium">Key Takeaway:</span> Spiked to High on Oct 14–15 after the Barclays note. Lower earlier in the week. Tone is mostly speculative/mixed rather than strongly bullish or bearish.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Posts surfaced</div>
+            <div class="h-48">
+              <canvas id="mergerCountChart"></canvas>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Unique posts returned by keyword + semantic searches. Not total volume on X. Each search is capped at 10 results.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Engagement on returned posts</div>
+            <div class="h-48">
+              <canvas id="mergerEngagementChart"></canvas>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Sum of likes + reposts on the posts that surfaced. Click a bar to see high-engagement posts. A few loud posts can dominate.</p>
+          </div>
+        </div>
+        <div id="engagementDetail" class="hidden mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — equal weight</div>
+            <div class="h-40">
+              <canvas id="mergerToneChart"></canvas>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">What the sample of posts actually said. Each post counts the same, regardless of likes.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — engagement-weighted</div>
+            <div class="h-40">
+              <canvas id="mergerToneEngagementChart"></canvas>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">What more people likely saw. Posts with more likes and reposts count more. Same posts as the left chart.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other topic panels (collapsed) -->
+    <div id="topic-connectivity" class="detail-panel mb-6">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">Connectivity / spectrum — 7-day activity</h3>
+          <button onclick="toggleTopic('connectivity')" class="text-xs text-slate-500">Close ✕</button>
+        </div>
+        <p class="text-sm text-slate-600 mb-3"><span class="font-medium">Key Takeaway:</span> Elevated for most of the week. Spectrum/mobile is the main driver. Tone is mixed — opportunity if executed vs. telecom reaction and competitive impact questions.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Posts surfaced</div>
+            <div class="h-48"><canvas id="connectivityCountChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Unique posts returned by keyword + semantic searches. Not total volume on X. Each search is capped at 10 results.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Engagement on returned posts</div>
+            <div class="h-48"><canvas id="connectivityEngagementChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Sum of likes + reposts on the posts that surfaced. Click a bar to see high-engagement posts.</p>
+          </div>
+        </div>
+        <div id="connectivityEngagementDetail" class="hidden mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — equal weight</div>
+            <div class="h-40"><canvas id="connectivityToneChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Count of posts in each category from the sample. Not percentages.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — engagement-weighted</div>
+            <div class="h-40"><canvas id="connectivityToneEngagementChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Likes + reposts on posts in each category. Same sample as the left chart.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="topic-lockup" class="detail-panel mb-6">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">Lock-up / supply — 7-day activity</h3>
+          <button onclick="toggleTopic('lockup')" class="text-xs text-slate-500">Close ✕</button>
+        </div>
+        <p class="text-sm text-slate-600 mb-3"><span class="font-medium">Key Takeaway:</span> Present all week. Rose as specific unlock timing details circulated. Tone is predominantly cautious / supply-overhang framing.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Posts surfaced</div>
+            <div class="h-48"><canvas id="lockupCountChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Unique posts returned by keyword + semantic searches. Not total volume on X. Each search is capped at 10 results.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Engagement on returned posts</div>
+            <div class="h-48"><canvas id="lockupEngagementChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Sum of likes + reposts on the posts that surfaced. Click a bar to see high-engagement posts.</p>
+          </div>
+        </div>
+        <div id="lockupEngagementDetail" class="hidden mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — equal weight</div>
+            <div class="h-40"><canvas id="lockupToneChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">What the sample of posts actually said. Each post counts the same, regardless of likes.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — engagement-weighted</div>
+            <div class="h-40"><canvas id="lockupToneEngagementChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">What more people likely saw. Posts with more likes and reposts count more. Same posts as the left chart.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="topic-space" class="detail-panel mb-6">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">Space / Starship / launch — 7-day activity</h3>
+          <button onclick="toggleTopic('space')" class="text-xs text-slate-500">Close ✕</button>
+        </div>
+        <p class="text-sm text-slate-600 mb-3"><span class="font-medium">Key Takeaway:</span> Steady Moderate. Not the volume leader this week. Tone is mostly bullish when it appears (launch cadence, Starship progress).</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Posts surfaced</div>
+            <div class="h-48"><canvas id="spaceCountChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Unique posts returned by keyword + semantic searches. Not total volume on X. Each search is capped at 10 results.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Engagement on returned posts</div>
+            <div class="h-48"><canvas id="spaceEngagementChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Sum of likes + reposts on the posts that surfaced. Click a bar to see high-engagement posts.</p>
+          </div>
+        </div>
+        <div id="spaceEngagementDetail" class="hidden mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — equal weight</div>
+            <div class="h-40"><canvas id="spaceToneChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">What the sample of posts actually said. Each post counts the same, regardless of likes.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — engagement-weighted</div>
+            <div class="h-40"><canvas id="spaceToneEngagementChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">What more people likely saw. Posts with more likes and reposts count more. Same posts as the left chart.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="topic-ai" class="detail-panel mb-6">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">AI / compute / data centers — 7-day activity</h3>
+          <button onclick="toggleTopic('ai')" class="text-xs text-slate-500">Close ✕</button>
+        </div>
+        <p class="text-sm text-slate-600 mb-3"><span class="font-medium">Key Takeaway:</span> Steady Moderate. Secondary to near-term catalysts. Tone is generally constructive when the topic appears (compute scale, AI synergies).</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Posts surfaced</div>
+            <div class="h-48"><canvas id="aiCountChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Unique posts returned by keyword + semantic searches. Not total volume on X. Each search is capped at 10 results.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Engagement on returned posts</div>
+            <div class="h-48"><canvas id="aiEngagementChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">Sum of likes + reposts on the posts that surfaced. Click a bar to see high-engagement posts.</p>
+          </div>
+        </div>
+        <div id="aiEngagementDetail" class="hidden mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — equal weight</div>
+            <div class="h-40"><canvas id="aiToneChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">What the sample of posts actually said. Each post counts the same, regardless of likes.</p>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Tone — engagement-weighted</div>
+            <div class="h-40"><canvas id="aiToneEngagementChart"></canvas></div>
+            <p class="text-xs text-slate-400 mt-1">What more people likely saw. Posts with more likes and reposts count more. Same posts as the left chart.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-xs text-slate-400 border-t border-slate-200 pt-4 mt-4">
+      <p>Source: Targeted X keyword searches. Relative activity only. Say “refresh SPCX” to update.</p>
+    </footer>
+  </div>
+
+  <script>
+    function toggleTopic(id) {
+      const panel = document.getElementById('topic-' + id);
+      const isOpen = panel.classList.contains('open');
+      document.querySelectorAll('.detail-panel').forEach(p => p.classList.remove('open'));
+      if (!isOpen) {
+        panel.classList.add('open');
+        setTimeout(initCharts, 50);
+      }
+    }
+
+    let chartsReady = false;
+    function initCharts() {
+      if (chartsReady) return;
+      chartsReady = true;
+      const labels = ['Oct 8–9', 'Oct 10', 'Oct 11', 'Oct 12–13', 'Oct 14', 'Oct 15'];
+      const opts = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            min: 0, max: 3.5,
+            ticks: { stepSize: 1, callback: v => v===1?'Low':v===2?'Mod':v===3?'High':'' },
+            title: { display: true, text: 'Relative activity' }
+          }
+        }
+      };
+      new Chart(document.getElementById('mergerCountChart'), {
+        type: 'bar',
+        data: { 
+          labels: ['Oct 8–9', 'Oct 10–11', 'Oct 12', 'Oct 13', 'Oct 14', 'Oct 15'], 
+          datasets: [{ 
+            data: [9, 8, 12, 14, 18, 16], 
+            backgroundColor: '#4f46e5'
+          }] 
+        },
+        options: {
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { 
+            y: { beginAtZero: true, title: { display: true, text: 'Unique posts surfaced' } }
+          }
+        }
+      });
+
+      const engagementPosts = {
+        'Oct 8–9': [
+          { text: 'The $TSLA x $SPCX merger is coming. He just has to pump SpaceX enough to make it possible.', likes: 0, reposts: 0, flag: false }
+        ],
+        'Oct 10–11': [
+          { text: 'Q4 2026 is going to be exciting for $TSLA. Cybercab scaling and a potential merger with $SPCX can lead to a significant breakout for TSLA.', likes: 275, reposts: 14, flag: true }
+        ],
+        'Oct 12': [
+          { text: 'You know what happens when $TSLA and $SPCX finally merge right?', likes: 77, reposts: 2, flag: false }
+        ],
+        'Oct 13': [
+          { text: '🚨 HOLY SH*T $SPCX HOLDERS ARE ABOUT TO GET INSANELY RICH… Elon Musk has plans to merge his two mega large companies… SpaceX and $TSLA.', likes: 266, reposts: 9, flag: true },
+          { text: '$SPCX is copying $TSLA\'s post-SolarCity chart… Wedbush: 80-90% odds of Tesla x SpaceX merger by early 2027.', likes: 25, reposts: 3, flag: true }
+        ],
+        'Oct 14': [
+          { text: 'Barclays says a $TSLA / $SPCX merger announcement is possible before Tesla’s 2026 AGM… Most likely structure is SpaceX acquires Tesla in all-stock deal.', likes: 1, reposts: 0, flag: false }
+        ],
+        'Oct 15': [
+          { text: 'I’m throwing an entire retirement account into SPCX, because why not? … Tesla merger after, and we complete.', likes: 3, reposts: 0, flag: false }
+        ]
+      };
+
+      const engChart = new Chart(document.getElementById('mergerEngagementChart'), {
+        type: 'bar',
+        data: { 
+          labels: ['Oct 8–9', 'Oct 10–11', 'Oct 12', 'Oct 13', 'Oct 14', 'Oct 15'], 
+          datasets: [{ 
+            data: [18, 310, 85, 320, 55, 42], 
+            backgroundColor: '#7c3aed'
+          }] 
+        },
+        options: {
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { 
+            y: { beginAtZero: true, title: { display: true, text: 'Likes + reposts (returned posts)' } }
+          },
+          onClick: (e, elements) => {
+            const detail = document.getElementById('engagementDetail');
+            if (!elements.length) { detail.classList.add('hidden'); return; }
+            const label = engChart.data.labels[elements[0].index];
+            const posts = engagementPosts[label] || [];
+            if (!posts.length) {
+              detail.innerHTML = '<span class="text-slate-500">No posts in sample for this day.</span>';
+            } else {
+              detail.innerHTML = posts.map(p => {
+                const label = p.flag 
+                  ? '<span class="text-xs font-medium text-amber-600">High-visibility post</span>' 
+                  : '<span class="text-xs font-medium text-slate-500">Highest engagement in sample</span>';
+                return `<div class="mb-2">${label}<br><span class="text-slate-700">“${p.text}”</span><br><span class="text-xs text-slate-400">${p.likes} likes · ${p.reposts} reposts</span></div>`;
+              }).join('');
+            }
+            detail.classList.remove('hidden');
+          }
+        }
+      });
+
+      const dayLabels = ['Oct 8–9', 'Oct 10–11', 'Oct 12', 'Oct 13', 'Oct 14', 'Oct 15'];
+      const countOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Unique posts surfaced' } } } };
+      const engOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Likes + reposts' } } } };
+
+      const connectivityPosts = {
+        'Oct 8–9': [{ text: 'There’s arguably no move I’ll ever make faster than switching to $SPCX mobile when it comes available. The mobile carriers today are awful, good riddance.', likes: 0, reposts: 0, flag: false }],
+        'Oct 10–11': [{ text: 'Just in : SpaceX $SPCX just acquired the low-band spectrum needed to push Starlink Mobile. Benzinga polled viewers: 73% would consider switching to a SpaceX phone plan.', likes: 178, reposts: 19, flag: true }],
+        'Oct 12': [{ text: 'The $SPCX spectrum deal has a price now: $8 BILLION. And the telecom complex sold off hard on the news.', likes: 0, reposts: 0, flag: false }],
+        'Oct 13': [{ text: 'SpaceX just bought key 800 MHz spectrum + got FCC approval for 15k next-gen Starlink satellites. Musk calls it the “last critical piece” to make Starlink Mobile a real rival.', likes: 153, reposts: 43, flag: true }],
+        'Oct 14': [{ text: 'Honestly forget AI, the opportunity for $SPCX mobile is insane if they execute. And it’s Elon, ofc they will execute.', likes: 2, reposts: 0, flag: false }],
+        'Oct 15': [{ text: 'Spcx buying spectrum', likes: 0, reposts: 0, flag: false }]
+      };
+      const lockupPosts = {
+        'Oct 8–9': [{ text: 'Unlock day close: $SPCX $162.57, up 1.2% on 92M shares. Up to 328M shares got sellable and both still closed green. Supply absorbed.', likes: 0, reposts: 0, flag: false }],
+        'Oct 10–11': [{ text: '5 big SpaceX unlock days so far. Each one closed higher than the one before. 6 Aug: $114.92 … 9 Oct: $162.57. And $SPCX is still ~20% above the $135 IPO price.', likes: 139, reposts: 10, flag: true }],
+        'Oct 12': [{ text: '🚨 $SPCX — MASSIVE LOCKUP EXPIRATIONS! THE BIGGEST SHARE UNLOCK IS STILL AHEAD!', likes: 0, reposts: 0, flag: false }],
+        'Oct 13': [{ text: 'SpaceX (SPCX) remaining lock-up releases • Oct 24: up to ~328.4M shares (7%) • After Q3 earnings: up to ~1.3B shares (28%)', likes: 2, reposts: 1, flag: false }],
+        'Oct 14': [{ text: '78% of all SpaceX shares still can\'t be sold. At the IPO only 4.7% could trade. Today it\'s 21.4%.', likes: 35, reposts: 2, flag: false }],
+        'Oct 15': [{ text: 'The last SPCX unlock was in August, zero sellers. Shorts squeezed. +50% since the lock-up.', likes: 1, reposts: 0, flag: false }]
+      };
+      const spacePosts = {
+        'Oct 8–9': [{ text: 'Morgan Stanley calling Flight 15 the biggest reusability test since the IPO. Nail it and the $SPCX cost-per-launch story gets a lot louder.', likes: 1, reposts: 0, flag: false }],
+        'Oct 10–11': [{ text: 'Morgan Stanley\'s Adam Jonas in new note on Starship flight 15: Flight 15 is shaping up as SpaceX\'s biggest test towards Starship reusability since the IPO.', likes: 1, reposts: 0, flag: false }],
+        'Oct 12': [{ text: 'Starship Flight 14 reached orbit and deployed 26 next-gen Starlink V3 satellites. Iteration velocity is unmatched.', likes: 0, reposts: 0, flag: false }],
+        'Oct 13': [{ text: 'Starship’s ascent burn is complete. Starship is now on a passively safe suborbital trajectory.', likes: 0, reposts: 0, flag: false }],
+        'Oct 14': [{ text: 'SpaceX launched more rockets this year than every other company and country on Earth combined. Almost. SpaceX: 118. Everyone else: 122.', likes: 12, reposts: 1, flag: false }],
+        'Oct 15': [{ text: 'Raymond James reportedly reiterated its Strong Buy rating with an $800 price target… Starship launch capacity, massive Starlink expansion.', likes: 0, reposts: 0, flag: false }]
+      };
+      const aiPosts = {
+        'Oct 8–9': [{ text: '$TSLA has to have 1M robotaxis in operation to match 1G of compute at $SPCX. That’s just the data center piece.', likes: 1, reposts: 0, flag: false }],
+        'Oct 10–11': [{ text: 'Adam Jonas’s “Distributed Inference Cloud” thesis is one of the more under-appreciated pieces of the SpaceX (SPCX) story right now.', likes: 1, reposts: 0, flag: false }],
+        'Oct 12': [{ text: '$SPCX isn\'t just building compute faster than every other neocloud. It has something none of them have: OPTIONALITY on every GPU it deploys.', likes: 1116, reposts: 121, flag: true }],
+        'Oct 13': [{ text: 'Most of the Neocloud investors didn’t aware that SpaceX $SPCX isn’t just building compute faster than every other neocloud. It has something none of them have: optionality on every GW it deploys.', likes: 144, reposts: 5, flag: true }],
+        'Oct 14': [{ text: 'SpaceX wants about 7x more AI compute in 15 months. 1.4 GW on 30 June. Over 2 GW by the end of this year.', likes: 37, reposts: 7, flag: false }],
+        'Oct 15': [{ text: 'Starlink alone justifies a lot of it. Orbital compute is the free option on top. Every dip under 146 is a gift imo $SPCX', likes: 0, reposts: 0, flag: false }]
+      };
+
+      function makeEngClick(posts, detailId) {
+        return (e, elements, chart) => {
+          const detail = document.getElementById(detailId);
+          if (!elements.length) { detail.classList.add('hidden'); return; }
+          const label = chart.data.labels[elements[0].index];
+          const dayPosts = posts[label] || [];
+          if (!dayPosts.length) {
+            detail.innerHTML = '<span class="text-slate-500">No high-visibility posts flagged for this day.</span>';
+          } else {
+            detail.innerHTML = dayPosts.map(p => {
+              const lbl = p.flag 
+                ? '<span class="text-xs font-medium text-amber-600">High-visibility post</span>' 
+                : '<span class="text-xs font-medium text-slate-500">Highest engagement in sample</span>';
+              return `<div class="mb-2">${lbl}<br><span class="text-slate-700">“${p.text}”</span><br><span class="text-xs text-slate-400">${p.likes} likes · ${p.reposts} reposts</span></div>`;
+            }).join('');
+          }
+          detail.classList.remove('hidden');
+        };
+      }
+
+      new Chart(document.getElementById('connectivityCountChart'), { type: 'bar', data: { labels: dayLabels, datasets: [{ data: [10, 8, 10, 12, 11, 10], backgroundColor: '#f59e0b' }] }, options: countOpts });
+      new Chart(document.getElementById('lockupCountChart'), { type: 'bar', data: { labels: dayLabels, datasets: [{ data: [8, 10, 10, 10, 9, 8], backgroundColor: '#ef4444' }] }, options: countOpts });
+      new Chart(document.getElementById('spaceCountChart'), { type: 'bar', data: { labels: dayLabels, datasets: [{ data: [6, 8, 8, 7, 9, 8], backgroundColor: '#10b981' }] }, options: countOpts });
+      new Chart(document.getElementById('aiCountChart'), { type: 'bar', data: { labels: dayLabels, datasets: [{ data: [5, 6, 7, 8, 6, 5], backgroundColor: '#3b82f6' }] }, options: countOpts });
+
+      const connEngChart = new Chart(document.getElementById('connectivityEngagementChart'), { 
+        type: 'bar', 
+        data: { labels: dayLabels, datasets: [{ data: [0, 197, 0, 196, 2, 0], backgroundColor: '#d97706' }] }, 
+        options: { ...engOpts, onClick: (e, el) => makeEngClick(connectivityPosts, 'connectivityEngagementDetail')(e, el, connEngChart) }
+      });
+      const lockEngChart = new Chart(document.getElementById('lockupEngagementChart'), { 
+        type: 'bar', 
+        data: { labels: dayLabels, datasets: [{ data: [0, 149, 0, 3, 37, 1], backgroundColor: '#dc2626' }] }, 
+        options: { ...engOpts, onClick: (e, el) => makeEngClick(lockupPosts, 'lockupEngagementDetail')(e, el, lockEngChart) }
+      });
+      const spaceEngChart = new Chart(document.getElementById('spaceEngagementChart'), { 
+        type: 'bar', 
+        data: { labels: dayLabels, datasets: [{ data: [1, 1, 0, 0, 13, 0], backgroundColor: '#059669' }] }, 
+        options: { ...engOpts, onClick: (e, el) => makeEngClick(spacePosts, 'spaceEngagementDetail')(e, el, spaceEngChart) }
+      });
+      const aiEngChart = new Chart(document.getElementById('aiEngagementChart'), { 
+        type: 'bar', 
+        data: { labels: dayLabels, datasets: [{ data: [1, 1, 1237, 149, 44, 0], backgroundColor: '#2563eb' }] }, 
+        options: { ...engOpts, onClick: (e, el) => makeEngClick(aiPosts, 'aiEngagementDetail')(e, el, aiEngChart) }
+      });
+
+      const toneOpts = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: 'Posts / engagement' } } }
+      };
+
+      new Chart(document.getElementById('mergerToneChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [4, 3, 3, 5, 2, 2], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [4, 4, 5, 3, 6, 6], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [1, 1, 2, 1, 2, 2], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+      new Chart(document.getElementById('mergerToneEngagementChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [8, 289, 30, 303, 15, 10], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [10, 15, 40, 12, 35, 28], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [0, 6, 15, 5, 5, 4], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+
+      new Chart(document.getElementById('connectivityToneChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [4, 5, 4, 5, 4, 3], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [3, 2, 3, 3, 3, 4], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [3, 1, 3, 2, 3, 3], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+      new Chart(document.getElementById('connectivityToneEngagementChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [0, 197, 0, 196, 2, 0], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [0, 0, 0, 0, 0, 0], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [0, 0, 0, 0, 0, 0], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+
+      new Chart(document.getElementById('lockupToneChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [1, 1, 1, 0, 0, 0], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [2, 2, 2, 1, 1, 1], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [5, 7, 7, 9, 8, 7], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+      new Chart(document.getElementById('lockupToneEngagementChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [0, 149, 0, 0, 0, 0], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [0, 0, 0, 0, 0, 0], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [0, 0, 0, 3, 37, 1], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+
+      new Chart(document.getElementById('spaceToneChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [4, 5, 5, 4, 6, 5], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [2, 2, 2, 2, 2, 2], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [0, 1, 1, 1, 1, 1], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+      new Chart(document.getElementById('spaceToneEngagementChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [1, 1, 0, 0, 13, 0], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [0, 0, 0, 0, 0, 0], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [0, 0, 0, 0, 0, 0], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+
+      new Chart(document.getElementById('aiToneChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [3, 4, 5, 5, 4, 3], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [2, 2, 2, 2, 2, 2], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [0, 0, 0, 1, 0, 0], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+      new Chart(document.getElementById('aiToneEngagementChart'), {
+        type: 'line',
+        data: { labels: dayLabels, datasets: [
+          { label: 'Bullish', data: [1, 1, 1237, 149, 44, 0], borderColor: '#10b981', tension: 0.3, fill: false },
+          { label: 'Neutral / mixed', data: [0, 0, 0, 0, 0, 0], borderColor: '#94a3b8', tension: 0.3, fill: false },
+          { label: 'Bearish / cautious', data: [0, 0, 0, 0, 0, 0], borderColor: '#ef4444', tension: 0.3, fill: false }
+        ]}, options: toneOpts
+      });
+    }
+    // init default chart
+    setTimeout(initCharts, 100);
+  </script>
+</body>
+</html>
